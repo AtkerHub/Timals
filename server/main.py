@@ -1,21 +1,13 @@
-from sqlalchemy import create_engine
-from sqlalchemy import text
-from sqlalchemy import MetaData
-from models import Base
+from models import Base, User
+from database import engine, get_db
+from schemas import UserCreate
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 
 
-#   Connecting with database (Postgre)
-engine = create_engine("postgresql+psycopg://admin:timmy@localhost:5433/timals-postgres-db", echo=True)
-
-# - - - Connection test - - - 
-#with engine.connect() as connection:
-#    result = connection.execute(text("select 1;"))
-#    print(result.one())
-
+#tables creations
 Base.metadata.create_all(engine)
 
 
@@ -26,16 +18,10 @@ app = FastAPI()
 async def root():
     return {"message": "Timals says Hello~!"}
 
-
-#   Session 
-SessionLocal = sessionmaker(bind=engine)
-
-def get_db():
-    #opening of a session
-    db = SessionLocal()
-    try:
-        #waiting for operations on db from e.g. FastAPI, "stopping iteration"
-        yield db
-    finally:
-        #closure of session so it wont make any error or incorrect data input
-        db.close()
+@app.post("/users/")
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = User(username = user.username, email = user.email)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
