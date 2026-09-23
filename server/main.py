@@ -1,9 +1,12 @@
+#imports from/connected with files
 from models import Base, User
 from database import engine, get_db
-from schemas import UserCreate
+from schemas import UserCreate, UserResponse
 
+#imports from/connected with API
 from fastapi import FastAPI, Depends
 
+#imports from/connected with Database
 from sqlalchemy.orm import Session
 
 
@@ -18,10 +21,17 @@ app = FastAPI()
 async def root():
     return {"message": "Timals says Hello~!"}
 
-@app.post("/users/")
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = User(username = user.username, email = user.email)
+@app.post("/users/", response_model=UserResponse)
+async def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = User(
+        username = user.username, 
+        email = user.email,
+        password = user.password,
+        first_name = user.first_name,
+        last_name = user.last_name)
+    
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+
     return db_user
