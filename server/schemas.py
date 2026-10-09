@@ -16,9 +16,33 @@ class UserResponse(BaseModel):
     first_name: str | None
     last_name: str | None
 
-    # stwórz nową klasę
-    # jedną dla wprowadzania użytkownika
-    # drugą do zwracania użytkownika
-    # wykorzystaj to EmailStr żeby od razu wykluczyć walidację maili
-    # oprócz tego to zwracanie użytkownika musi być bez hasła
-    # Note for future "None" here "null" in JSON
+    # Note for future: "None" in here; "null" in JSON
+
+
+class CategoryCreate(BaseModel):
+    name: str
+    user_id: int | None
+
+class CategoryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    user_id: int | None
+
+class TimerPresetCreate(BaseModel):
+    name: str
+    worktime: int
+    breaktime: int
+    resttime: int
+    cycle: int
+    user_id: int | None
+
+class TimerPresetResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    worktime: int
+    breaktime: int
+    resttime: int
+    cycle: int
+    user_id: int | None
