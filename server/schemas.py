@@ -10,6 +10,7 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     username: str
     email: EmailStr
     #password - not displayed here, safety reasons
@@ -26,8 +27,10 @@ class CategoryCreate(BaseModel):
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     name: str
     user_id: int | None
+
 
 class TimerPresetCreate(BaseModel):
     name: str
@@ -40,6 +43,7 @@ class TimerPresetCreate(BaseModel):
 class TimerPresetResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     name: str
     worktime: int
     breaktime: int

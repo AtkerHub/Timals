@@ -6,10 +6,14 @@ from schemas import CategoryCreate, CategoryResponse
 from schemas import TimerPresetCreate, TimerPresetResponse
 
 #imports from/connected with API
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 
-#imports from/connected with Database
+#imports from/connected with Database/SQLAlchemy
 from sqlalchemy.orm import Session
+from sqlalchemy import select
+
+#imports from/connected with others
+from typing import List
 
 
 #tables creations
@@ -19,9 +23,26 @@ Base.metadata.create_all(engine)
 #   Testing FastAPI
 app = FastAPI()
 
+
+
 @app.get("/")
 async def root():
     return {"message": "Timals says Hello~!"}
+
+@app.get("/categories/", response_model=List[CategoryResponse])
+async def read_categories(db: Session = Depends(get_db)):
+    return db.scalars(select(Category)).all() 
+
+@app.get("/categories/{category_id}", response_model=CategoryResponse)
+async def read_category(category_id: int, db: Session = Depends(get_db)):
+    db_category = db.scalar(select(Category).where(Category.id == category_id)).first()
+
+    if db_category is None:
+        raise HTTPException(status_code = 404, detail="Category not found")
+    
+    return db_category
+
+
 
 
 
@@ -40,7 +61,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
     return db_user
 
-@app.post("/category/", response_model=CategoryResponse)
+@app.post("/categories/", response_model=CategoryResponse)
 async def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
     db_category = Category(
         name = category.name,
@@ -52,7 +73,7 @@ async def create_category(category: CategoryCreate, db: Session = Depends(get_db
 
     return db_category
 
-@app.post("/timer_preset/", response_model=TimerPresetResponse)
+@app.post("/timer_presets/", response_model=TimerPresetResponse)
 async def create_timer_preset(timer_preset: TimerPresetCreate, db: Session = Depends(get_db)):
     db_timer_preset = TimerPreset(
         name = timer_preset.name,
