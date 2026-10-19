@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
+from datetime import date
 
 class UserCreate(BaseModel):
     username: str
@@ -50,3 +51,34 @@ class TimerPresetResponse(BaseModel):
     resttime: int
     cycle: int
     user_id: int | None
+
+
+class ActivityCreate(BaseModel):
+    name: str
+    user_id: int | None
+    category_id: int | None
+
+class ActivityResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    user_id: int | None
+    category_id: int | None
+
+
+class ActivityLogCreate(BaseModel):
+    user_id: int
+    activity_id: int
+    finished: bool = False
+    date: date
+
+class ActivityLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    activity_id: int
+    finished: bool
+    date: date
+
