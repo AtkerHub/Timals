@@ -5,7 +5,7 @@ from schemas import UserCreate, UserResponse
 from schemas import CategoryCreate, CategoryResponse
 from schemas import TimerPresetCreate, TimerPresetResponse
 from schemas import ActivityCreate, ActivityResponse
-from schemas import ActivityLogCreate, ActivityLogResponse
+from schemas import ActivityLogCreate, ActivityLogResponse, ActivityLogUpdate
 
 #   Imports from/connected with API
 from fastapi import FastAPI, Depends, HTTPException
@@ -33,6 +33,7 @@ def add_days():
 
 
 #   HTTP Methods
+#   GET Methods
 @app.get("/")
 async def root():
     return {"message": "Timals says Hello~!"}
@@ -77,14 +78,38 @@ async def read_timer_preset(timer_preset_id: int, user_id: int | None = None, db
                                         TimerPreset.id == timer_preset_id
                                         )
                                 ))
+    
     if db_timer_preset is None:
         raise HTTPException(status_code = 404, detail = "Timer Preset not found")
 
     return db_timer_preset
 
 
+@app.get("/activities/{activity_id}/logs", response_model=List[ActivityLogResponse])
+async def read_activity_logs(user_id: int, activity_id: int, range_filter: str | None = "30days", db: Session = Depends(get_db)):
+    query = select(ActivityLog).where(and_(ActivityLog.user_id == user_id, ActivityLog.activity_id == activity_id))
 
+    today = date.today()
 
+    if range_filter == "30days":
+        start_date = today - timedelta(days=30)
+    elif range_filter == "year":
+        start_date = date(today.year, 1, 1)
+    elif range_filter == "all":
+        pass
+    else:
+        raise HTTPException(status_code = 400, detail = "Bad Request")
+
+    if range_filter != "all":
+        query = query.where(ActivityLog.date >= start_date)
+
+    query = query.order_by(ActivityLog.date.asc())
+
+    logs = db.scalars(query).all()
+    
+    return logs
+
+#   POST Methods
 @app.post("/users/", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
@@ -145,6 +170,7 @@ async def create_activity(activity: ActivityCreate, db: Session = Depends(get_db
 async def create_activity_logs(activity_id: int, user_id: int, for_days: int, db: Session = Depends(get_db)):
     db_activity = db.scalar(select(Activity)
                             .where(Activity.id == activity_id))
+    
     if db_activity is None:
         raise HTTPException(status_code = 404, detail = "Timer Preset not found")
     
@@ -174,3 +200,22 @@ async def create_activity_logs(activity_id: int, user_id: int, for_days: int, db
     #No refresh here
 
     return logs_to_create
+
+
+
+#   PATCH Methods
+@app.patch("/activity_logs/{activity_log_id}", response_model=ActivityLogResponse)
+async def update_actvitiy_log(activity_log_id: int, activity_log_update: ActivityLogUpdate, db: Session = Depends(get_db)):
+    db_log = db.scalar(select(ActivityLog)
+                       .where(ActivityLog.id == activity_log_id))
+
+    if db_log is None:
+        raise HTTPException(status_code = 404, detail = "Activity Log not found")
+
+    db_log.finished = activity_log_update.finished
+
+    db.commit()
+    db.refresh(db_log)
+
+
+    return db_log

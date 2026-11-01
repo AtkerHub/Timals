@@ -82,3 +82,5 @@ class ActivityLogResponse(BaseModel):
     finished: bool
     date: date
 
+class ActivityLogUpdate(BaseModel):
+    finished: bool
