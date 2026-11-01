@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import date
+from datetime import date, datetime, time
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer, String, Boolean, Date
 from sqlalchemy.orm import DeclarativeBase
@@ -25,6 +25,7 @@ class User(Base):
     timer_presets: Mapped[List["TimerPreset"]] = relationship(back_populates="owner")
     activities: Mapped[List["Activity"]] = relationship(back_populates="owner")
     activitieslog: Mapped[List["ActivityLog"]] = relationship(back_populates="owner")
+    calendarevents: Mapped[List["CalendarEvent"]] = relationship(back_populates="owner")
 
 class Category(Base):
     __tablename__ = "category"
@@ -36,6 +37,7 @@ class Category(Base):
     #relationships
     owner: Mapped[Optional["User"]] = relationship(back_populates="categories")
     activities: Mapped[List["Activity"]] = relationship(back_populates="assignment")
+    calendarevents: Mapped[List["CalendarEvent"]] = relationship(back_populates="assignment")
     
 class TimerPreset(Base):
     __tablename__ = "timerpreset"
@@ -64,7 +66,6 @@ class Activity(Base):
     assignment: Mapped[Optional["Category"]] = relationship(back_populates="activities")
     activitieslog: Mapped[List["ActivityLog"]] = relationship(back_populates="dailyactivity")
 
-
 class ActivityLog(Base):
     __tablename__ = "activitylog"
 
@@ -77,3 +78,32 @@ class ActivityLog(Base):
     #relationships
     owner: Mapped["User"] = relationship(back_populates="activitieslog")
     dailyactivity: Mapped["Activity"] = relationship(back_populates="activitieslog")
+
+class CalendarEvent(Base):
+    __tablename__ = "calendarevent"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[Optional[str]]
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    category_id: Mapped[Optional[int]] = mapped_column(ForeignKey("category.id"))
+    start_time: Mapped[datetime]
+    end_time: Mapped[datetime]
+    whole_day: Mapped[bool]
+    repeat: Mapped[Optional[str]]
+    note: Mapped[Optional[str]]
+    place: Mapped[Optional[str]]
+
+    #relationships
+    owner: Mapped["User"] = relationship(back_populates="calendarevents")
+    assignment: Mapped[Optional["Category"]] = relationship(back_populates="calendarevents")
+    calendarreminders: Mapped[List["CalendarReminder"]] = relationship(back_populates="event")
+
+class CalendarReminder(Base):
+    __tablename__ = "calendarreminder"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("calendarevent.id"))
+    minutes_before: Mapped[Optional[int]]
+
+    #relationships
+    event: Mapped["CalendarEvent"] = relationship(back_populates="calendarreminders")
