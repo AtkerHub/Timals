@@ -7,13 +7,14 @@ from schemas import TimerPresetCreate, TimerPresetResponse
 from schemas import ActivityCreate, ActivityResponse
 from schemas import ActivityLogCreate, ActivityLogResponse, ActivityLogUpdate
 from schemas import CalendarReminderCreate, CalendarReminderResponse
-from schemas import CalendarEventCreate, CalendarEventResponse
+from schemas import CalendarEventCreate, CalendarEventResponse, CalendarEventSimpleResponse
 
 #   Imports from/connected with API
 from fastapi import FastAPI, Depends, HTTPException
 
 #   Imports from/connected with Database/SQLAlchemy
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import selectinload
 from sqlalchemy import select, and_, or_
 
 #   Imports from/connected with others
@@ -111,6 +112,47 @@ async def read_activity_logs(user_id: int, activity_id: int, range_filter: str |
     
     return logs
 
+@app.get("/calendar_events/", response_model=List[CalendarEventSimpleResponse])
+async def read_calendar_events(user_id: int, start_date: date | None = None, end_date: date | None = None, db: Session = Depends(get_db)):
+    if start_date is None or end_date is None:
+        today = date.today()
+        first_day_of_month = today.replace(day=1)
+    
+        days_to_substract = first_day_of_month.weekday()
+    
+        grid_start_date = first_day_of_month - timedelta(days=days_to_substract)
+        grid_end_date = grid_start_date + timedelta(days=41)
+
+        start_date = grid_start_date
+        end_date = grid_end_date
+
+    limit_date = end_date + timedelta(days=1)
+
+    query = select(CalendarEvent).where(CalendarEvent.user_id == user_id)
+
+    query = query.where(CalendarEvent.start_time >= start_date)
+    query = query.where(CalendarEvent.end_time < limit_date)
+
+    db_events = db.scalars(query).all()
+
+    return db_events
+
+@app.get("/calendar_events/{event_id}", response_model=CalendarEventResponse)
+async def read_calendar_event(user_id: int, event_id: int, db: Session = Depends(get_db)):
+    query = select(CalendarEvent).where(
+        CalendarEvent.user_id == user_id,
+        CalendarEvent.id == event_id).options(
+            selectinload(CalendarEvent.calendarreminders)
+        ) 
+
+    db_event = db.scalar(query)
+
+    if db_event is None:
+        raise HTTPException(status_code = 404, detail = "Calendar Event not found")
+
+    return db_event
+
+
 #   POST Methods
 @app.post("/users/", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -204,7 +246,7 @@ async def create_activity_logs(activity_id: int, user_id: int, for_days: int, db
     return logs_to_create
 
 @app.post("/calendar_events/", response_model=CalendarEventResponse)
-async def create_calendar_events(event: CalendarEventCreate, db: Session = Depends(get_db)):
+async def create_calendar_event(event: CalendarEventCreate, db: Session = Depends(get_db)):
     db_reminders = []
 
     if event.calendarreminders:

@@ -123,3 +123,13 @@ class CalendarEventResponse(BaseModel):
     note: str | None
     place: str | None
     calendarreminders: list[CalendarReminderResponse] | None
+
+class CalendarEventSimpleResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str | None
+    user_id: int
+    category_id: int | None
+    start_time: datetime
+    end_time: datetime
