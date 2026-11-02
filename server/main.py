@@ -1,11 +1,13 @@
 #   Imports from/connected with files
-from models import Base, User, Category, TimerPreset, Activity, ActivityLog
+from models import Base, User, Category, TimerPreset, Activity, ActivityLog, CalendarReminder, CalendarEvent
 from database import engine, get_db
 from schemas import UserCreate, UserResponse
 from schemas import CategoryCreate, CategoryResponse
 from schemas import TimerPresetCreate, TimerPresetResponse
 from schemas import ActivityCreate, ActivityResponse
 from schemas import ActivityLogCreate, ActivityLogResponse, ActivityLogUpdate
+from schemas import CalendarReminderCreate, CalendarReminderResponse
+from schemas import CalendarEventCreate, CalendarEventResponse
 
 #   Imports from/connected with API
 from fastapi import FastAPI, Depends, HTTPException
@@ -200,6 +202,34 @@ async def create_activity_logs(activity_id: int, user_id: int, for_days: int, db
     #No refresh here
 
     return logs_to_create
+
+@app.post("/calendar_events/", response_model=CalendarEventResponse)
+async def create_calendar_events(event: CalendarEventCreate, db: Session = Depends(get_db)):
+    db_reminders = []
+
+    if event.calendarreminders:
+        for reminder in event.calendarreminders:
+            db_reminders.append(CalendarReminder(
+                minutes_before = reminder.minutes_before))
+
+    db_event = CalendarEvent(
+        name = event.name,
+        user_id = event.user_id,
+        category_id = event.category_id,
+        start_time = event.start_time,
+        end_time = event.end_time,
+        whole_day = event.whole_day,
+        repeat = event.repeat,
+        note = event.note,
+        place = event.place,
+        calendarreminders = db_reminders
+    )
+
+    db.add(db_event)
+    db.commit()
+    db.refresh(db_event)
+
+    return db_event
 
 
 

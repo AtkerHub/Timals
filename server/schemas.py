@@ -93,7 +93,7 @@ class CalendarReminderResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    event_it: int
+    event_id: int
     minutes_before: int | None
 
 
