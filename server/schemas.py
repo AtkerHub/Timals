@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
-from datetime import date
+from datetime import date, datetime, time
 
 class UserCreate(BaseModel):
     username: str
@@ -84,3 +84,42 @@ class ActivityLogResponse(BaseModel):
 
 class ActivityLogUpdate(BaseModel):
     finished: bool
+
+
+class CalendarReminderCreate(BaseModel):
+    minutes_before: int
+
+class CalendarReminderResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    event_it: int
+    minutes_before: int | None
+
+
+class CalendarEventCreate(BaseModel):
+    name: str | None
+    user_id: int
+    category_id: int | None
+    start_time: datetime
+    end_time: datetime
+    whole_day: bool
+    repeat: str | None
+    note: str | None
+    place: str | None
+    calendarreminders: list[CalendarReminderCreate] | None
+
+class CalendarEventResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str | None
+    user_id: int
+    category_id: int | None
+    start_time: datetime
+    end_time: datetime
+    whole_day: bool
+    repeat: str | None
+    note: str | None
+    place: str | None
+    calendarreminders: list[CalendarReminderResponse] | None
