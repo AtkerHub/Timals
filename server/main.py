@@ -2,12 +2,12 @@
 from models import Base, User, Category, TimerPreset, Activity, ActivityLog, CalendarReminder, CalendarEvent
 from database import engine, get_db
 from schemas import UserCreate, UserResponse
-from schemas import CategoryCreate, CategoryResponse
-from schemas import TimerPresetCreate, TimerPresetResponse
-from schemas import ActivityCreate, ActivityResponse
+from schemas import CategoryCreate, CategoryResponse, CategoryUpdate
+from schemas import TimerPresetCreate, TimerPresetResponse, TimerPresetUpdate
+from schemas import ActivityCreate, ActivityResponse, ActivityUpdate
 from schemas import ActivityLogCreate, ActivityLogResponse, ActivityLogUpdate
-from schemas import CalendarReminderCreate, CalendarReminderResponse
-from schemas import CalendarEventCreate, CalendarEventResponse, CalendarEventSimpleResponse
+from schemas import CalendarReminderCreate, CalendarReminderResponse, CalendarReminderUpdate
+from schemas import CalendarEventCreate, CalendarEventResponse, CalendarEventSimpleResponse, CalendarEventUpdate
 
 #   Imports from/connected with API
 from fastapi import FastAPI, Depends, HTTPException
@@ -276,6 +276,60 @@ async def create_calendar_event(event: CalendarEventCreate, db: Session = Depend
 
 
 #   PATCH Methods
+@app.patch("/categories/{category_id}", response_model=CategoryResponse)
+async def update_category(category_id: int, category_update: CategoryUpdate, db: Session = Depends(get_db)):
+    db_category = db.scalar(select(Category)
+                            .where(Category.id == category_id))
+
+    if db_category is None:
+        raise HTTPException(status_code = 404, detail = "Category not found")       
+
+    update_data = category_update.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(db_category, key, value)
+
+    db.commit()
+    db.refresh(db_category)
+
+    return db_category
+
+@app.patch("/timer_presets/{timer_preset_id}", response_model=TimerPresetResponse)
+async def update_timer_preset(timer_preset_id: int, timer_preset_update: TimerPresetUpdate, db: Session = Depends(get_db)):
+    db_timer_preset = db.scalar(select(TimerPreset)
+                            .where(TimerPreset.id == timer_preset_id))
+
+    if db_timer_preset is None:
+        raise HTTPException(status_code = 404, detail = "Timer Preset not found")       
+
+    update_data = timer_preset_update.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(db_timer_preset, key, value)
+
+    db.commit()
+    db.refresh(db_timer_preset)
+
+    return db_timer_preset
+
+@app.patch("/activities/{activity_id}", response_model=ActivityResponse)
+async def update_activity(activity_id: int, activity_update: ActivityUpdate, db: Session = Depends(get_db)):
+    db_activity = db.scalar(select(Activity)
+                            .where(Activity.id == activity_id))
+
+    if db_activity is None:
+        raise HTTPException(status_code = 404, detail = "Activity not found")       
+
+    update_data = activity_update.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(db_activity, key, value)
+
+    db.commit()
+    db.refresh(db_activity)
+
+    return db_activity
+
 @app.patch("/activity_logs/{activity_log_id}", response_model=ActivityLogResponse)
 async def update_actvitiy_log(activity_log_id: int, activity_log_update: ActivityLogUpdate, db: Session = Depends(get_db)):
     db_log = db.scalar(select(ActivityLog)
@@ -284,10 +338,12 @@ async def update_actvitiy_log(activity_log_id: int, activity_log_update: Activit
     if db_log is None:
         raise HTTPException(status_code = 404, detail = "Activity Log not found")
 
-    db_log.finished = activity_log_update.finished
+    update_data = activity_log_update.model_dump(exclude_unset=True)
+    
+    for key, value in update_data.items():
+        setattr(db_log, key, value)
 
     db.commit()
     db.refresh(db_log)
-
 
     return db_log

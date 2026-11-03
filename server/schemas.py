@@ -32,6 +32,9 @@ class CategoryResponse(BaseModel):
     name: str
     user_id: int | None
 
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+
 
 class TimerPresetCreate(BaseModel):
     name: str
@@ -52,9 +55,16 @@ class TimerPresetResponse(BaseModel):
     cycle: int
     user_id: int | None
 
+class TimerPresetUpdate(BaseModel):
+    name: str | None = None
+    worktime: int | None = None
+    breaktime: int | None = None
+    resttime: int | None = None
+    cycle: int | None = None
+
 
 class ActivityCreate(BaseModel):
-    name: str
+    name: str | None
     user_id: int | None
     category_id: int | None
 
@@ -65,6 +75,10 @@ class ActivityResponse(BaseModel):
     name: str
     user_id: int | None
     category_id: int | None
+
+class ActivityUpdate(BaseModel):
+    name: str | None = None
+    category_id: int | None = None
 
 
 class ActivityLogCreate(BaseModel):
@@ -95,6 +109,9 @@ class CalendarReminderResponse(BaseModel):
     id: int
     event_id: int
     minutes_before: int | None
+
+class CalendarReminderUpdate(BaseModel):
+    minutes_before: int | None = None
 
 
 class CalendarEventCreate(BaseModel):
@@ -133,3 +150,14 @@ class CalendarEventSimpleResponse(BaseModel):
     category_id: int | None
     start_time: datetime
     end_time: datetime
+
+class CalendarEventUpdate(BaseModel):
+    name: str | None = None
+    category_id: int | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    whole_day: bool | None = None
+    repeat: str | None = None
+    note: str | None = None
+    place: str | None = None
+    calendarreminders: list[CalendarReminderUpdate] | None = None
