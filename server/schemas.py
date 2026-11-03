@@ -111,6 +111,7 @@ class CalendarReminderResponse(BaseModel):
     minutes_before: int | None
 
 class CalendarReminderUpdate(BaseModel):
+    id: int | None = None
     minutes_before: int | None = None
 
 

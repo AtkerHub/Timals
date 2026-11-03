@@ -347,3 +347,50 @@ async def update_actvitiy_log(activity_log_id: int, activity_log_update: Activit
     db.refresh(db_log)
 
     return db_log
+
+@app.patch("/calendar_events/{event_id}", response_model=CalendarEventResponse)
+async def update_timer_preset(event_id: int, event_update: CalendarEventUpdate, db: Session = Depends(get_db)):
+    db_event = db.scalar(select(CalendarEvent)
+                            .where(CalendarEvent.id == event_id)
+                            .options(
+                                selectinload(CalendarEvent.calendarreminders)))
+
+    if db_event is None:
+        raise HTTPException(status_code = 404, detail = "Timer Preset not found")       
+
+    #update_data (dict variable)
+    update_data = event_update.model_dump(exclude_unset=True)
+
+    # no nested values (calendar reminders) in update_data 
+    # (updated calendar reminders are here) (dict variable)
+    incoming_reminders = update_data.pop("calendarreminders", None)
+
+    for key, value in update_data.items():
+        setattr(db_event, key, value)
+
+
+    if incoming_reminders is not None:
+        incoming_id = set()
+
+        for inc_reminder in incoming_reminders:
+            if inc_reminder.get("id") is not None:
+                incoming_id.add(inc_reminder["id"])
+
+        for existing_reminder in db_event.calendarreminders[:]:
+            if existing_reminder.id not in incoming_id:
+                db.delete(existing_reminder)
+
+        for inc_reminder in incoming_reminders:
+            if inc_reminder.get("id") is not None:
+                for existing_reminder in db_event.calendarreminders:
+                    if existing_reminder.id == inc_reminder["id"]:
+                        existing_reminder.minutes_before = inc_reminder["minutes_before"]
+                        break
+            else:
+                db_event.calendarreminders.append(CalendarReminder(
+                    minutes_before = inc_reminder["minutes_before"]))
+            
+    db.commit()
+    db.refresh(db_event)
+
+    return db_event
