@@ -15,7 +15,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(50))
-    email: Mapped[str]
+    email: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str]
     first_name: Mapped[Optional[str]]
     last_name: Mapped[Optional[str]]
@@ -32,10 +32,10 @@ class Category(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
     #relationships
-    owner: Mapped[Optional["User"]] = relationship(back_populates="categories")
+    owner: Mapped["User"] = relationship(back_populates="categories")
     activities: Mapped[List["Activity"]] = relationship(back_populates="assignment")
     calendarevents: Mapped[List["CalendarEvent"]] = relationship(back_populates="assignment")
     
@@ -48,21 +48,21 @@ class TimerPreset(Base):
     breaktime: Mapped[int]
     resttime: Mapped[int]
     cycle: Mapped[int]
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
     #relationships
-    owner: Mapped[Optional["User"]] = relationship(back_populates="timer_presets")
+    owner: Mapped["User"] = relationship(back_populates="timer_presets")
 
 class Activity(Base):
     __tablename__ = "activity"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     category_id: Mapped[Optional[int]] = mapped_column(ForeignKey("category.id"))
 
     #relationships
-    owner: Mapped[Optional["User"]] = relationship(back_populates="activities")
+    owner: Mapped["User"] = relationship(back_populates="activities")
     assignment: Mapped[Optional["Category"]] = relationship(back_populates="activities")
     activitieslog: Mapped[List["ActivityLog"]] = relationship(back_populates="dailyactivity")
 

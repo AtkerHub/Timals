@@ -43,18 +43,16 @@ async def root():
 
 
 @app.get("/categories/", response_model=List[CategoryResponse])
-async def read_categories(user_id: int | None = None, db: Session = Depends(get_db)):
+async def read_categories(user_id: int , db: Session = Depends(get_db)):
     return db.scalars(select(Category)
-                      .where(
-                          or_(Category.user_id == user_id, Category.user_id.is_(None))
-                      )).all()
+                      .where(Category.user_id == user_id)).all()
 
 @app.get("/categories/{category_id}", response_model=CategoryResponse)
-async def read_category(category_id: int, user_id: int | None = None, db: Session = Depends(get_db)):
+async def read_category(category_id: int, user_id: int, db: Session = Depends(get_db)):
     db_category = db.scalar(select(Category)
                             .where(
                                 and_(
-                                    or_(Category.user_id == user_id, Category.user_id.is_(None)),
+                                    Category.user_id == user_id,
                                     Category.id == category_id
                                     )
                                 ))
@@ -66,18 +64,16 @@ async def read_category(category_id: int, user_id: int | None = None, db: Sessio
 
 
 @app.get("/timer_presets/", response_model=List[TimerPresetResponse])
-async def read_timer_presets(user_id: int | None = None, db: Session = Depends(get_db)):
+async def read_timer_presets(user_id: int, db: Session = Depends(get_db)):
     return db.scalars(select(TimerPreset)
-                      .where(
-                          or_(TimerPreset.user_id == user_id, TimerPreset.user_id.is_(None))
-                      )).all()
+                      .where(TimerPreset.user_id == user_id)).all()
 
 @app.get("/timer_presets/{timer_preset_id}", response_model=TimerPresetResponse)
-async def read_timer_preset(timer_preset_id: int, user_id: int | None = None, db: Session = Depends(get_db)):
+async def read_timer_preset(timer_preset_id: int, user_id: int, db: Session = Depends(get_db)):
     db_timer_preset = db.scalar(select(TimerPreset)
                                 .where(
                                     and_(
-                                        or_(TimerPreset.user_id == user_id, TimerPreset.user_id.is_(None)),
+                                        TimerPreset.user_id == user_id,
                                         TimerPreset.id == timer_preset_id
                                         )
                                 ))
@@ -394,3 +390,5 @@ async def update_timer_preset(event_id: int, event_update: CalendarEventUpdate, 
     db.refresh(db_event)
 
     return db_event
+
+#   DELETE Methods

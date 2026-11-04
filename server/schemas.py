@@ -23,14 +23,14 @@ class UserResponse(BaseModel):
 
 class CategoryCreate(BaseModel):
     name: str
-    user_id: int | None
+    user_id: int
 
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
-    user_id: int | None
+    user_id: int
 
 class CategoryUpdate(BaseModel):
     name: str | None = None
@@ -42,7 +42,7 @@ class TimerPresetCreate(BaseModel):
     breaktime: int
     resttime: int
     cycle: int
-    user_id: int | None
+    user_id: int
 
 class TimerPresetResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -53,7 +53,7 @@ class TimerPresetResponse(BaseModel):
     breaktime: int
     resttime: int
     cycle: int
-    user_id: int | None
+    user_id: int
 
 class TimerPresetUpdate(BaseModel):
     name: str | None = None
@@ -65,7 +65,7 @@ class TimerPresetUpdate(BaseModel):
 
 class ActivityCreate(BaseModel):
     name: str | None
-    user_id: int | None
+    user_id: int 
     category_id: int | None
 
 class ActivityResponse(BaseModel):
@@ -73,7 +73,7 @@ class ActivityResponse(BaseModel):
 
     id: int
     name: str
-    user_id: int | None
+    user_id: int
     category_id: int | None
 
 class ActivityUpdate(BaseModel):
