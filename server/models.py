@@ -96,7 +96,7 @@ class CalendarEvent(Base):
     #relationships
     owner: Mapped["User"] = relationship(back_populates="calendarevents")
     assignment: Mapped[Optional["Category"]] = relationship(back_populates="calendarevents")
-    calendarreminders: Mapped[List["CalendarReminder"]] = relationship(back_populates="event")
+    calendarreminders: Mapped[List["CalendarReminder"]] = relationship(back_populates="event", cascade="all, delete-orphan")
 
 class CalendarReminder(Base):
     __tablename__ = "calendarreminder"

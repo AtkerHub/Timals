@@ -345,7 +345,7 @@ async def update_actvitiy_log(activity_log_id: int, activity_log_update: Activit
     return db_log
 
 @app.patch("/calendar_events/{event_id}", response_model=CalendarEventResponse)
-async def update_timer_preset(event_id: int, event_update: CalendarEventUpdate, db: Session = Depends(get_db)):
+async def update_calendar_event(event_id: int, event_update: CalendarEventUpdate, db: Session = Depends(get_db)):
     db_event = db.scalar(select(CalendarEvent)
                             .where(CalendarEvent.id == event_id)
                             .options(
@@ -392,3 +392,17 @@ async def update_timer_preset(event_id: int, event_update: CalendarEventUpdate, 
     return db_event
 
 #   DELETE Methods
+@app.delete("/calendar_events/{event_id}")
+async def delete_calendar_event(user_id: int, event_id: int, db: Session = Depends(get_db)):
+    db_event = db.scalar(select(CalendarEvent)
+                                .where(and_(
+                                    CalendarEvent.user_id == user_id, 
+                                    CalendarEvent.id == event_id)))
+
+    if db_event is None:
+            raise HTTPException(status_code = 404, detail = "Calendar Event not found")
+
+    db.delete(db_event)
+    db.commit()
+
+    return {"detail": "Calendar Event successfully deleted"}
