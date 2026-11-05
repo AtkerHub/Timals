@@ -392,6 +392,70 @@ async def update_calendar_event(event_id: int, event_update: CalendarEventUpdate
     return db_event
 
 #   DELETE Methods
+@app.delete("/categories/{category_id}")
+async def delete_category(user_id: int, category_id: int, db: Session = Depends(get_db)):
+    db_category = db.scalar(select(Category)
+                            .where(and_(
+                                Category.user_id == user_id,
+                                Category.id == category_id
+                            )))
+    if db_category is None:
+        raise HTTPException(status_code = 404, detail = "Category not found")
+
+    db.delete(db_category)
+    db.commit()
+
+    return {"detail": "Category successfully deleted"}
+
+@app.delete("/timer_presets/{timer_preset_id}")
+async def delete_timer_preset(user_id: int, timer_preset_id: int, db: Session = Depends(get_db)):
+    db_timer_preset = db.scalar(select(TimerPreset)
+                                .where(and_(
+                                    TimerPreset.user_id == user_id,
+                                    TimerPreset.id == timer_preset_id
+                                )))
+
+    if db_timer_preset is None:
+        raise HTTPException(status_code = 404, detail = "Timer Preset not found")
+
+    db.delete(db_timer_preset)
+    db.commit()
+
+
+    return {"detail": "TimerPreset successfully deleted"}
+
+@app.delete("/activities/{activity_id}")
+async def delete_activity(user_id: int, activity_id: int, db: Session = Depends(get_db)):
+    db_activity = db.scalar(select(Activity)
+                            .where(and_(
+                                Activity.user_id == user_id,
+                                Activity.id == activity_id
+                            )))
+
+    if db_activity is None:
+        raise HTTPException(status_code = 404, detail = "Activity not found")
+
+    db.delete(db_activity)
+    db.commit()
+
+    return {"detail": "Activity successfully deleted"}
+
+@app.delete("/activity_logs/{activity_log_id}")
+async def delete_activity_log(user_id: int, activity_log_id: int, db: Session = Depends(get_db)):
+    db_activity_log = db.scalar(select(ActivityLog)
+                                .where(and_(
+                                    ActivityLog.user_id == user_id,
+                                    ActivityLog.id == activity_log_id
+                                )))
+    if db_activity_log is None:
+        raise HTTPException(status_code = 404, detail = "Activity Log not found")
+
+    db.delete(db_activity_log)
+    db.commit
+
+    return {"detail": "Activity Log successfully deleted"}
+    
+
 @app.delete("/calendar_events/{event_id}")
 async def delete_calendar_event(user_id: int, event_id: int, db: Session = Depends(get_db)):
     db_event = db.scalar(select(CalendarEvent)

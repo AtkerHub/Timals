@@ -64,7 +64,7 @@ class Activity(Base):
     #relationships
     owner: Mapped["User"] = relationship(back_populates="activities")
     assignment: Mapped[Optional["Category"]] = relationship(back_populates="activities")
-    activitieslog: Mapped[List["ActivityLog"]] = relationship(back_populates="dailyactivity")
+    activitieslog: Mapped[List["ActivityLog"]] = relationship(back_populates="dailyactivity", cascade="all, delete-orphan")
 
 class ActivityLog(Base):
     __tablename__ = "activitylog"
