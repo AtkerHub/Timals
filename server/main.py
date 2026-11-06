@@ -122,12 +122,20 @@ async def read_calendar_events(user_id: int, start_date: date | None = None, end
         start_date = grid_start_date
         end_date = grid_end_date
 
+
+
     limit_date = end_date + timedelta(days=1)
 
     query = select(CalendarEvent).where(CalendarEvent.user_id == user_id)
 
-    query = query.where(CalendarEvent.start_time >= start_date)
-    query = query.where(CalendarEvent.end_time < limit_date)
+    query = query.where(or_(
+        CalendarEvent.start_time >= start_date,
+        CalendarEvent.repeat.is_not(None)
+    ))
+    query = query.where(or_(
+        CalendarEvent.start_time < limit_date,
+        CalendarEvent.end_time < limit_date
+    ))
 
     db_events = db.scalars(query).all()
 
