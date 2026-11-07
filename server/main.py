@@ -19,7 +19,8 @@ from sqlalchemy import select, and_, or_
 
 #   Imports from/connected with others
 from typing import List
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, time
+from dateutil.rrule import rrulestr
 
 
 #   Tables generating
@@ -122,7 +123,8 @@ async def read_calendar_events(user_id: int, start_date: date | None = None, end
         start_date = grid_start_date
         end_date = grid_end_date
 
-
+    grid_start_datetime = datetime.combine(start_date, time.min)
+    grid_end_datetime = datetime.combine(end_date, time.min)
 
     limit_date = end_date + timedelta(days=1)
 
@@ -139,7 +141,31 @@ async def read_calendar_events(user_id: int, start_date: date | None = None, end
 
     db_events = db.scalars(query).all()
 
-    return db_events
+    final_events = []
+
+    #if - simple event, else cyclical event
+    for event in db_events:
+        if event.repeat is None:
+            if event.start_time >= start_date:
+                final_events.append(event)
+        else:
+            rule = rrulestr(event.repeat, dtstart = event.start_time)
+            cyclical_dates = rule.between(grid_start_datetime, grid_end_datetime, inc=True)
+
+            duration = event.end_time - event.start_time
+
+            for cycl_date in cyclical_dates:
+                event_clone = CalendarEventSimpleResponse(
+                    id = event.id,
+                    name = event.name,
+                    user_id = event.user_id,
+                    category_id = event.category_id,
+                    start_time = cycl_date,
+                    end_time = cycl_date + duration
+                )
+                final_events.append(event_clone)
+
+    return final_events
 
 @app.get("/calendar_events/{event_id}", response_model=CalendarEventResponse)
 async def read_calendar_event(user_id: int, event_id: int, db: Session = Depends(get_db)):
