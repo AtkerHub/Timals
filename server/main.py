@@ -22,6 +22,10 @@ from typing import List
 from datetime import date, timedelta, datetime, time
 from dateutil.rrule import rrulestr
 
+#   Imports from/connected with security
+from passlib.context import CryptContext
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+
 
 #   Tables generating
 Base.metadata.create_all(engine)
@@ -30,10 +34,17 @@ Base.metadata.create_all(engine)
 #   Testing FastAPI
 app = FastAPI()
 
+#   Security
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-#   Functions
-def add_days():
-    return None
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
 
 
 #   HTTP Methods
@@ -184,12 +195,28 @@ async def read_calendar_event(user_id: int, event_id: int, db: Session = Depends
 
 
 #   POST Methods
+@app.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    db_user = db.scalar(select(User)
+                        .where(User.email == form_data.username))
+    #email (unique) as indetifier, identifier in OAuth2 is a "username"
+
+    if not db_user:
+        raise HTTPException(status_code = 400, detail = "Incorrect email or password")
+
+    if not verify_password(form_data.password, db_user.hashed_password):
+        raise HTTPException(status_code = 400, detail = "Incorrect email or password")
+
+    return {"access_token": "REAL_TOKEN", "token_type": "bearer"}
+
 @app.post("/users/", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    hashed_password = get_password_hash(user.password)
+    
     db_user = User(
         username = user.username, 
         email = user.email,
-        password = user.password,
+        hashed_password = hashed_password,
         first_name = user.first_name,
         last_name = user.last_name)
     
