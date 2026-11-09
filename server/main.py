@@ -19,12 +19,13 @@ from sqlalchemy import select, and_, or_
 
 #   Imports from/connected with others
 from typing import List
-from datetime import date, timedelta, datetime, time
+from datetime import date, timedelta, datetime, time, timezone
 from dateutil.rrule import rrulestr
 
 #   Imports from/connected with security
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+import jwt
 
 
 #   Tables generating
@@ -45,6 +46,22 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
+#   JWT
+SECRET_KEY = "secret_key_test"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+
+    expire = datetime.now(timezone.utc) + timedelta(minutes = ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    to_encode.update({"exp": expire})
+
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm = ALGORITHM)
+
+    return encoded_jwt
+
 
 
 #   HTTP Methods
@@ -52,6 +69,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 @app.get("/")
 async def root():
     return {"message": "Timals says Hello~!"}
+
+#authorization test endpoint
+@app.get("/users/me")
+async def read_users_me(token: str = Depends(oauth2_scheme)):
+    return {"current_ticket": token}
 
 
 @app.get("/categories/", response_model=List[CategoryResponse])
@@ -207,7 +229,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     if not verify_password(form_data.password, db_user.hashed_password):
         raise HTTPException(status_code = 400, detail = "Incorrect email or password")
 
-    return {"access_token": "REAL_TOKEN", "token_type": "bearer"}
+    access_token = create_access_token(data={"sub": db_user.email})
+    
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/users/", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
