@@ -10,7 +10,7 @@ from schemas import CalendarReminderCreate, CalendarReminderResponse, CalendarRe
 from schemas import CalendarEventCreate, CalendarEventResponse, CalendarEventSimpleResponse, CalendarEventUpdate
 
 #   Imports from/connected with API
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 
 #   Imports from/connected with Database/SQLAlchemy
 from sqlalchemy.orm import Session
@@ -26,6 +26,7 @@ from dateutil.rrule import rrulestr
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 import jwt
+from jwt.exceptions import InvalidTokenError
 
 
 #   Tables generating
@@ -51,6 +52,29 @@ SECRET_KEY = "secret_key_test"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code = status.HTTP_401_UNAUTHORIZED,
+        detail = "Could not validate credentials",
+        headers = {"WWW-Authenticate": "Bearer"}
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms =[ALGORITHM])
+
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except InvalidTokenError:
+        raise credentials_exception
+
+    user = db.scalar(select(User).where(User.email == email))
+    if user is None:
+        raise credentials_exception
+
+    return user
+        
+
 def create_access_token(data: dict):
     to_encode = data.copy()
 
@@ -64,6 +88,7 @@ def create_access_token(data: dict):
 
 
 
+
 #   HTTP Methods
 #   GET Methods
 @app.get("/")
@@ -72,8 +97,8 @@ async def root():
 
 #authorization test endpoint
 @app.get("/users/me")
-async def read_users_me(token: str = Depends(oauth2_scheme)):
-    return {"current_ticket": token}
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
 
 
 @app.get("/categories/", response_model=List[CategoryResponse])
