@@ -276,10 +276,11 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 @app.post("/categories/", response_model=CategoryResponse)
-async def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
+async def create_category(category: CategoryCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_category = Category(
         name = category.name,
-        user_id = category.user_id)
+        user_id = current_user.id
+        )
 
     db.add(db_category)
     db.commit()

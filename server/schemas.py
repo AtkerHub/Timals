@@ -23,7 +23,7 @@ class UserResponse(BaseModel):
 
 class CategoryCreate(BaseModel):
     name: str
-    user_id: int
+    #user_id: int
 
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
