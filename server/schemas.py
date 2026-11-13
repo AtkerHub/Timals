@@ -7,6 +7,7 @@ class UserCreate(BaseModel):
     password: str = Field(min_length = 8, max_length = 72)
     first_name: str | None
     last_name: str | None
+    is_admin: bool = False
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -17,6 +18,7 @@ class UserResponse(BaseModel):
     #password - not displayed here, safety reasons
     first_name: str | None
     last_name: str | None
+    is_admin: bool
 
     # Note for future: "None" in here; "null" in JSON
 

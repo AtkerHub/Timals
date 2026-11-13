@@ -19,13 +19,14 @@ class User(Base):
     hashed_password: Mapped[str]
     first_name: Mapped[Optional[str]]
     last_name: Mapped[Optional[str]]
+    is_admin: Mapped[bool] = mapped_column(default=False)
 
     #relationships
-    categories: Mapped[List["Category"]] = relationship(back_populates="owner")
-    timer_presets: Mapped[List["TimerPreset"]] = relationship(back_populates="owner")
-    activities: Mapped[List["Activity"]] = relationship(back_populates="owner")
-    activitieslog: Mapped[List["ActivityLog"]] = relationship(back_populates="owner")
-    calendarevents: Mapped[List["CalendarEvent"]] = relationship(back_populates="owner")
+    categories: Mapped[List["Category"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+    timer_presets: Mapped[List["TimerPreset"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+    activities: Mapped[List["Activity"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+    activitieslog: Mapped[List["ActivityLog"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
+    calendarevents: Mapped[List["CalendarEvent"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
 
 class Category(Base):
     __tablename__ = "category"
