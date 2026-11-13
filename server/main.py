@@ -102,9 +102,9 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 
 
 @app.get("/categories/", response_model=List[CategoryResponse])
-async def read_categories(user_id: int , db: Session = Depends(get_db)):
+async def read_categories(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.scalars(select(Category)
-                      .where(Category.user_id == user_id)).all()
+                      .where(Category.user_id == current_user.id)).all()
 
 @app.get("/categories/{category_id}", response_model=CategoryResponse)
 async def read_category(category_id: int, user_id: int, db: Session = Depends(get_db)):
@@ -504,10 +504,10 @@ async def update_calendar_event(event_id: int, event_update: CalendarEventUpdate
 
 #   DELETE Methods
 @app.delete("/categories/{category_id}")
-async def delete_category(user_id: int, category_id: int, db: Session = Depends(get_db)):
+async def delete_category(category_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_category = db.scalar(select(Category)
                             .where(and_(
-                                Category.user_id == user_id,
+                                Category.user_id == current_user.id,
                                 Category.id == category_id
                             )))
     if db_category is None:
