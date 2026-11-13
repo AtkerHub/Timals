@@ -107,11 +107,11 @@ async def read_categories(current_user: User = Depends(get_current_user), db: Se
                       .where(Category.user_id == current_user.id)).all()
 
 @app.get("/categories/{category_id}", response_model=CategoryResponse)
-async def read_category(category_id: int, user_id: int, db: Session = Depends(get_db)):
+async def read_category(category_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_category = db.scalar(select(Category)
                             .where(
                                 and_(
-                                    Category.user_id == user_id,
+                                    Category.user_id == current_user.id,
                                     Category.id == category_id
                                     )
                                 ))
@@ -123,16 +123,16 @@ async def read_category(category_id: int, user_id: int, db: Session = Depends(ge
 
 
 @app.get("/timer_presets/", response_model=List[TimerPresetResponse])
-async def read_timer_presets(user_id: int, db: Session = Depends(get_db)):
+async def read_timer_presets(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.scalars(select(TimerPreset)
-                      .where(TimerPreset.user_id == user_id)).all()
+                      .where(TimerPreset.user_id == current_user.id)).all()
 
 @app.get("/timer_presets/{timer_preset_id}", response_model=TimerPresetResponse)
-async def read_timer_preset(timer_preset_id: int, user_id: int, db: Session = Depends(get_db)):
+async def read_timer_preset(timer_preset_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_timer_preset = db.scalar(select(TimerPreset)
                                 .where(
                                     and_(
-                                        TimerPreset.user_id == user_id,
+                                        TimerPreset.user_id == current_user.id,
                                         TimerPreset.id == timer_preset_id
                                         )
                                 ))
@@ -144,8 +144,8 @@ async def read_timer_preset(timer_preset_id: int, user_id: int, db: Session = De
 
 
 @app.get("/activities/{activity_id}/logs", response_model=List[ActivityLogResponse])
-async def read_activity_logs(user_id: int, activity_id: int, range_filter: str | None = "30days", db: Session = Depends(get_db)):
-    query = select(ActivityLog).where(and_(ActivityLog.user_id == user_id, ActivityLog.activity_id == activity_id))
+async def read_activity_logs(activity_id: int, range_filter: str | None = "30days", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    query = select(ActivityLog).where(and_(ActivityLog.user_id == current_user.id, ActivityLog.activity_id == activity_id))
 
     today = date.today()
 
@@ -168,7 +168,7 @@ async def read_activity_logs(user_id: int, activity_id: int, range_filter: str |
     return logs
 
 @app.get("/calendar_events/", response_model=List[CalendarEventSimpleResponse])
-async def read_calendar_events(user_id: int, start_date: date | None = None, end_date: date | None = None, db: Session = Depends(get_db)):
+async def read_calendar_events(start_date: date | None = None, end_date: date | None = None, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if start_date is None or end_date is None:
         today = date.today()
         first_day_of_month = today.replace(day=1)
@@ -186,7 +186,7 @@ async def read_calendar_events(user_id: int, start_date: date | None = None, end
 
     limit_date = end_date + timedelta(days=1)
 
-    query = select(CalendarEvent).where(CalendarEvent.user_id == user_id)
+    query = select(CalendarEvent).where(CalendarEvent.user_id == current_user.id)
 
     query = query.where(or_(
         CalendarEvent.start_time >= start_date,
@@ -226,9 +226,9 @@ async def read_calendar_events(user_id: int, start_date: date | None = None, end
     return final_events
 
 @app.get("/calendar_events/{event_id}", response_model=CalendarEventResponse)
-async def read_calendar_event(user_id: int, event_id: int, db: Session = Depends(get_db)):
+async def read_calendar_event(event_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     query = select(CalendarEvent).where(
-        CalendarEvent.user_id == user_id,
+        CalendarEvent.user_id == current_user.id,
         CalendarEvent.id == event_id).options(
             selectinload(CalendarEvent.calendarreminders)
         ) 
@@ -289,14 +289,14 @@ async def create_category(category: CategoryCreate, current_user: User = Depends
     return db_category
 
 @app.post("/timer_presets/", response_model=TimerPresetResponse)
-async def create_timer_preset(timer_preset: TimerPresetCreate, db: Session = Depends(get_db)):
+async def create_timer_preset(timer_preset: TimerPresetCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_timer_preset = TimerPreset(
         name = timer_preset.name,
         worktime = timer_preset.worktime,
         breaktime = timer_preset.breaktime,
         resttime = timer_preset.resttime,
         cycle = timer_preset.cycle,
-        user_id = timer_preset.user_id)
+        user_id = current_user.id)
 
     db.add(db_timer_preset)
     db.commit()
@@ -305,10 +305,10 @@ async def create_timer_preset(timer_preset: TimerPresetCreate, db: Session = Dep
     return db_timer_preset
 
 @app.post("/activities/", response_model=ActivityResponse)
-async def create_activity(activity: ActivityCreate, db: Session = Depends(get_db)):
+async def create_activity(activity: ActivityCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_activity = Activity(
         name = activity.name,
-        user_id = activity.user_id,
+        user_id = current_user.id,
         category_id = activity.category_id)
 
     db.add(db_activity)
@@ -318,7 +318,7 @@ async def create_activity(activity: ActivityCreate, db: Session = Depends(get_db
     return db_activity
 
 @app.post("/activities/{activity_id}/generate_logs", response_model=List[ActivityLogResponse])
-async def create_activity_logs(activity_id: int, user_id: int, for_days: int, db: Session = Depends(get_db)):
+async def create_activity_logs(activity_id: int, for_days: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_activity = db.scalar(select(Activity)
                             .where(Activity.id == activity_id))
     
@@ -339,7 +339,7 @@ async def create_activity_logs(activity_id: int, user_id: int, for_days: int, db
 
     for i in range(for_days):
         new_log = ActivityLog(
-            user_id = user_id,
+            user_id = current_user.id,
             activity_id = activity_id,
             date = start_date + timedelta(days = i)
         )
@@ -353,7 +353,7 @@ async def create_activity_logs(activity_id: int, user_id: int, for_days: int, db
     return logs_to_create
 
 @app.post("/calendar_events/", response_model=CalendarEventResponse)
-async def create_calendar_event(event: CalendarEventCreate, db: Session = Depends(get_db)):
+async def create_calendar_event(event: CalendarEventCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_reminders = []
 
     if event.calendarreminders:
@@ -363,7 +363,7 @@ async def create_calendar_event(event: CalendarEventCreate, db: Session = Depend
 
     db_event = CalendarEvent(
         name = event.name,
-        user_id = event.user_id,
+        user_id = current_user.id,
         category_id = event.category_id,
         start_time = event.start_time,
         end_time = event.end_time,
@@ -519,10 +519,10 @@ async def delete_category(category_id: int, current_user: User = Depends(get_cur
     return {"detail": "Category successfully deleted"}
 
 @app.delete("/timer_presets/{timer_preset_id}")
-async def delete_timer_preset(user_id: int, timer_preset_id: int, db: Session = Depends(get_db)):
+async def delete_timer_preset(timer_preset_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_timer_preset = db.scalar(select(TimerPreset)
                                 .where(and_(
-                                    TimerPreset.user_id == user_id,
+                                    TimerPreset.user_id == current_user.id,
                                     TimerPreset.id == timer_preset_id
                                 )))
 
@@ -536,10 +536,10 @@ async def delete_timer_preset(user_id: int, timer_preset_id: int, db: Session = 
     return {"detail": "TimerPreset successfully deleted"}
 
 @app.delete("/activities/{activity_id}")
-async def delete_activity(user_id: int, activity_id: int, db: Session = Depends(get_db)):
+async def delete_activity(activity_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_activity = db.scalar(select(Activity)
                             .where(and_(
-                                Activity.user_id == user_id,
+                                Activity.user_id == current_user.id,
                                 Activity.id == activity_id
                             )))
 
@@ -552,10 +552,10 @@ async def delete_activity(user_id: int, activity_id: int, db: Session = Depends(
     return {"detail": "Activity successfully deleted"}
 
 @app.delete("/activity_logs/{activity_log_id}")
-async def delete_activity_log(user_id: int, activity_log_id: int, db: Session = Depends(get_db)):
+async def delete_activity_log(activity_log_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_activity_log = db.scalar(select(ActivityLog)
                                 .where(and_(
-                                    ActivityLog.user_id == user_id,
+                                    ActivityLog.user_id == current_user.id,
                                     ActivityLog.id == activity_log_id
                                 )))
     if db_activity_log is None:
@@ -568,10 +568,10 @@ async def delete_activity_log(user_id: int, activity_log_id: int, db: Session = 
     
 
 @app.delete("/calendar_events/{event_id}")
-async def delete_calendar_event(user_id: int, event_id: int, db: Session = Depends(get_db)):
+async def delete_calendar_event(event_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_event = db.scalar(select(CalendarEvent)
                                 .where(and_(
-                                    CalendarEvent.user_id == user_id, 
+                                    CalendarEvent.user_id == current_user.id, 
                                     CalendarEvent.id == event_id)))
 
     if db_event is None:
