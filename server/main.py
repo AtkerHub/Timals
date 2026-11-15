@@ -1,7 +1,7 @@
 #   Imports from/connected with files
 from models import Base, User, Category, TimerPreset, Activity, ActivityLog, CalendarReminder, CalendarEvent
 from database import engine, get_db
-from schemas import UserCreate, UserResponse
+from schemas import UserCreate, UserResponse, UserUpdate, UserRoleUpdate
 from schemas import CategoryCreate, CategoryResponse, CategoryUpdate
 from schemas import TimerPresetCreate, TimerPresetResponse, TimerPresetUpdate
 from schemas import ActivityCreate, ActivityResponse, ActivityUpdate
@@ -388,6 +388,27 @@ async def create_calendar_event(event: CalendarEventCreate, current_user: User =
 
 
 #   PATCH Methods
+@app.patch("/users/me", response_model=UserResponse)
+async def update_user(user_update: UserUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_user = db.scalar(select(User)
+                        .where(User.id == current_user))
+
+    update_data = user_update.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        if key == "new_password":
+            if value is not None:
+                hashed = get_password_hash(value)
+                setattr(db_user, "hashed_password", hashed)
+        else:
+            setattr(db_user, key, value)
+
+    db.commit()
+    db.refresh(db_user)
+
+    return db_user
+        
+
 @app.patch("/categories/{category_id}", response_model=CategoryResponse)
 async def update_category(category_id: int, category_update: CategoryUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_category = db.scalar(select(Category)
@@ -519,6 +540,17 @@ async def update_calendar_event(event_id: int, event_update: CalendarEventUpdate
 
 
 #   DELETE Methods
+@app.delete("/users/me")
+async def delete_user(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_user = db.scalar(select(User)
+                        .where(User.id == current_user.id))
+
+    db.delete(db_user)
+    db.commit()
+
+    return {"detail": "User successfully deleted"}
+
+
 @app.delete("/categories/{category_id}")
 async def delete_category(category_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_category = db.scalar(select(Category)
@@ -849,6 +881,25 @@ async def admin_create_calendar_event(user_id: int, event: CalendarEventCreate, 
 
 
 #   PATCH Methods
+@app.patch("/admin/users/{user_id}/role", response_model=UserResponse)
+async def admin_update_users(user_id: int, user_role_update: UserRoleUpdate, admin_user: User = Depends(get_admin_user), db: Session = Depends(get_db)):
+    db_user = db.scalar(select(User)
+                        .where(User.id == user_id))
+
+    if db_user is None:
+        raise HTTPException(status_code = 404, detail = "User not found")
+
+    update_data = user_role_update.model_dump(exclude_unset=True)
+    
+    for key, value in update_data.items():
+        setattr(db_user, key, value) 
+
+    db.commit()
+    db.refresh(db_user)
+
+    return db_user
+
+
 @app.patch("/admin/categories/{category_id}", response_model=CategoryResponse)
 async def admin_update_category(category_id: int, category_update: CategoryUpdate, admin_user: User = Depends(get_admin_user), db: Session = Depends(get_db)):
     db_category = db.scalar(select(Category)
@@ -973,6 +1024,20 @@ async def admin_update_calendar_event(event_id: int, event_update: CalendarEvent
 
 
 #   DELETE Methods
+@app.delete("/admin/users/{user_id}")
+async def admin_delete_user(user_id: int, admin_user: User = Depends(get_admin_user), db: Session = Depends(get_db)):
+    db_user = db.scalar(select(User)
+                            .where(User.id == user_id))
+
+    if db_user is None:
+            raise HTTPException(status_code = 404, detail = "User not found")
+
+    db.delete(db_user)
+    db.commit()
+
+    return {"detail": "User successfully deleted by Administrator"}
+
+    
 @app.delete("/admin/categories/{category_id}")
 async def admin_delete_category(category_id: int, admin_user: User = Depends(get_admin_user), db: Session = Depends(get_db)):
     db_category = db.scalar(select(Category)
