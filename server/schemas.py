@@ -44,7 +44,7 @@ class TimerPresetCreate(BaseModel):
     breaktime: int
     resttime: int
     cycle: int
-    user_id: int
+    #user_id: int
 
 class TimerPresetResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -67,7 +67,7 @@ class TimerPresetUpdate(BaseModel):
 
 class ActivityCreate(BaseModel):
     name: str | None
-    user_id: int 
+    #user_id: int 
     category_id: int | None
 
 class ActivityResponse(BaseModel):
@@ -84,7 +84,7 @@ class ActivityUpdate(BaseModel):
 
 
 class ActivityLogCreate(BaseModel):
-    user_id: int
+    #user_id: int
     activity_id: int
     finished: bool = False
     date: date
@@ -119,7 +119,7 @@ class CalendarReminderUpdate(BaseModel):
 
 class CalendarEventCreate(BaseModel):
     name: str | None
-    user_id: int
+    #user_id: int
     category_id: int | None
     start_time: datetime
     end_time: datetime

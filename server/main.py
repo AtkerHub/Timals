@@ -209,8 +209,8 @@ async def read_calendar_events(start_date: date | None = None, end_date: date | 
     #if - simple event, else cyclical event
     for event in db_events:
         if event.repeat is None:
-            if event.start_time >= start_date:
-                final_events.append(event)
+            if event.start_time.date() >= start_date:
+                final_events.append(CalendarEventSimpleResponse.model_validate(event))
         else:
             rule = rrulestr(event.repeat, dtstart = event.start_time)
             cyclical_dates = rule.between(grid_start_datetime, grid_end_datetime, inc=True)
@@ -389,9 +389,11 @@ async def create_calendar_event(event: CalendarEventCreate, current_user: User =
 
 #   PATCH Methods
 @app.patch("/categories/{category_id}", response_model=CategoryResponse)
-async def update_category(category_id: int, category_update: CategoryUpdate, db: Session = Depends(get_db)):
+async def update_category(category_id: int, category_update: CategoryUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_category = db.scalar(select(Category)
-                            .where(Category.id == category_id))
+                            .where(and_(
+                                Category.user_id == current_user.id,
+                                Category.id == category_id)))
 
     if db_category is None:
         raise HTTPException(status_code = 404, detail = "Category not found")       
@@ -407,9 +409,11 @@ async def update_category(category_id: int, category_update: CategoryUpdate, db:
     return db_category
 
 @app.patch("/timer_presets/{timer_preset_id}", response_model=TimerPresetResponse)
-async def update_timer_preset(timer_preset_id: int, timer_preset_update: TimerPresetUpdate, db: Session = Depends(get_db)):
+async def update_timer_preset(timer_preset_id: int, timer_preset_update: TimerPresetUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_timer_preset = db.scalar(select(TimerPreset)
-                            .where(TimerPreset.id == timer_preset_id))
+                            .where(and_(
+                                TimerPreset.user_id == current_user.id,
+                                TimerPreset.id == timer_preset_id)))
 
     if db_timer_preset is None:
         raise HTTPException(status_code = 404, detail = "Timer Preset not found")       
@@ -425,9 +429,11 @@ async def update_timer_preset(timer_preset_id: int, timer_preset_update: TimerPr
     return db_timer_preset
 
 @app.patch("/activities/{activity_id}", response_model=ActivityResponse)
-async def update_activity(activity_id: int, activity_update: ActivityUpdate, db: Session = Depends(get_db)):
+async def update_activity(activity_id: int, activity_update: ActivityUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_activity = db.scalar(select(Activity)
-                            .where(Activity.id == activity_id))
+                            .where(and_(
+                                Activity.user_id == current_user.id,
+                                Activity.id == activity_id)))
 
     if db_activity is None:
         raise HTTPException(status_code = 404, detail = "Activity not found")       
@@ -443,9 +449,11 @@ async def update_activity(activity_id: int, activity_update: ActivityUpdate, db:
     return db_activity
 
 @app.patch("/activity_logs/{activity_log_id}", response_model=ActivityLogResponse)
-async def update_actvitiy_log(activity_log_id: int, activity_log_update: ActivityLogUpdate, db: Session = Depends(get_db)):
+async def update_actvitiy_log(activity_log_id: int, activity_log_update: ActivityLogUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_log = db.scalar(select(ActivityLog)
-                       .where(ActivityLog.id == activity_log_id))
+                       .where(and_(
+                                ActivityLog.user_id == current_user.id, 
+                                ActivityLog.id == activity_log_id)))
 
     if db_log is None:
         raise HTTPException(status_code = 404, detail = "Activity Log not found")
@@ -461,14 +469,16 @@ async def update_actvitiy_log(activity_log_id: int, activity_log_update: Activit
     return db_log
 
 @app.patch("/calendar_events/{event_id}", response_model=CalendarEventResponse)
-async def update_calendar_event(event_id: int, event_update: CalendarEventUpdate, db: Session = Depends(get_db)):
+async def update_calendar_event(event_id: int, event_update: CalendarEventUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_event = db.scalar(select(CalendarEvent)
-                            .where(CalendarEvent.id == event_id)
+                            .where(and_(
+                                CalendarEvent.user_id == current_user.id, 
+                                CalendarEvent.id == event_id))
                             .options(
                                 selectinload(CalendarEvent.calendarreminders)))
 
     if db_event is None:
-        raise HTTPException(status_code = 404, detail = "Timer Preset not found")       
+        raise HTTPException(status_code = 404, detail = "Calendar Event not found")       
 
     #update_data (dict variable)
     update_data = event_update.model_dump(exclude_unset=True)
