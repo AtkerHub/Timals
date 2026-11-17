@@ -11,6 +11,7 @@ from schemas import CalendarEventCreate, CalendarEventResponse, CalendarEventSim
 
 #   Imports from/connected with API
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 
 #   Imports from/connected with Database/SQLAlchemy
 from sqlalchemy.orm import Session
@@ -33,8 +34,16 @@ from jwt.exceptions import InvalidTokenError
 Base.metadata.create_all(engine)
 
 
-#   Testing FastAPI
+#   FastAPI
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 #   Security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
