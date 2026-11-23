@@ -157,6 +157,26 @@ async def read_timer_preset(timer_preset_id: int, current_user: User = Depends(g
     return db_timer_preset
 
 
+@app.get("/activities/", response_model=List[ActivityResponse])
+async def read_activities(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return db.scalars(select(Activity)
+                      .where(Activity.user_id == current_user.id)).all()
+
+@app.get("/activities/{activity_id}", response_model=ActivityResponse)
+async def read_activity(activity_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_activity = db.scalar(select(Activity)
+                            .where(and_(
+                                Activity.user_id == current_user.id,
+                                Activity.id == activity_id
+                            )
+                            ))
+
+    if db_activity is None:
+            raise HTTPException(status_code = 404, detail = "Activity not found")
+    
+    return db_activity
+    
+
 @app.get("/activities/{activity_id}/logs", response_model=List[ActivityLogResponse])
 async def read_activity_logs(activity_id: int, range_filter: str | None = "30days", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     query = select(ActivityLog).where(and_(ActivityLog.user_id == current_user.id, ActivityLog.activity_id == activity_id))
@@ -180,6 +200,7 @@ async def read_activity_logs(activity_id: int, range_filter: str | None = "30day
     logs = db.scalars(query).all()
     
     return logs
+
 
 @app.get("/calendar_events/", response_model=List[CalendarEventSimpleResponse])
 async def read_calendar_events(start_date: date | None = None, end_date: date | None = None, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -256,6 +277,20 @@ async def read_calendar_event(event_id: int, current_user: User = Depends(get_cu
 
 
 #   POST Methods
+@app.post("/signin/", response_model=UserResponse)
+async def signin(user: UserCreate, db: Session = Depends(get_db)):
+    hashed_password = get_password_hash(user.password)
+
+    db_user = User(
+            username = user.username, 
+            email = user.email,
+            hashed_password = hashed_password,
+            first_name = user.first_name,
+            last_name = user.last_name)
+    
+    return db_user
+
+
 @app.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     db_user = db.scalar(select(User)
@@ -681,6 +716,21 @@ async def admin_read_timer_preset(timer_preset_id: int, admin_user: User = Depen
 
     return db_timer_preset
 
+
+@app.get("/admin/activities/", response_model=List[ActivityResponse])
+async def admin_read_activities(user_id: int, admin_user: User = Depends(get_admin_user), db: Session = Depends(get_db)):
+    return db.scalars(select(Activity)
+                      .where(Activity.user_id == user_id)).all()
+
+@app.get("/admin/activities/{activity_id}", response_model=ActivityResponse)
+async def admin_read_activity(activity_id: int, admin_user: User = Depends(get_admin_user), db: Session = Depends(get_db)):
+    db_activity = db.scalar(select(Activity)
+                            .where(Activity.id == activity_id))
+
+    if db_activity is None:
+            raise HTTPException(status_code = 404, detail = "Activity not found")
+    
+    return db_activity
 
 @app.get("/admin/activities/{activity_id}/logs", response_model=List[ActivityLogResponse])
 async def admin_read_activity_logs(activity_id: int, range_filter: str | None = "30days", admin_user: User = Depends(get_admin_user), db: Session = Depends(get_db)):

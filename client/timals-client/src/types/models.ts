@@ -53,6 +53,15 @@ export interface CalendarEvent {
     calendarreminders: CalendarReminder[] | null;
 }
 
+export interface CalendarEventSimple {
+    id: number;
+    name: string | null;
+    user_id: number;
+    category_id: number | null;
+    start_time: string;
+    end_time: string;
+}
+
 export interface CalendarReminder {
     id: number;
     event_id: number;
